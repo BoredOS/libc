@@ -113,6 +113,7 @@ enum {
     SYSTEM_CMD_TTY_GET_ID = 78,
     SYSTEM_CMD_PTY_CREATE = 82,
     SYSTEM_CMD_PTY_DESTROY = 83
+    ,SYSTEM_CMD_GET_PID = 84
 };
 
 enum {

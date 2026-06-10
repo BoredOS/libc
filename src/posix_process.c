@@ -240,3 +240,9 @@ int usleep(unsigned int usec) {
     sys_system(SYSTEM_CMD_SLEEP, ms, 0, 0, 0);
     return 0;
 }
+
+__attribute__((weak)) pid_t getpid(void) {
+    int r = sys_system(SYSTEM_CMD_GET_PID, 0, 0, 0, 0);
+    if (r < 0) return -1;
+    return (pid_t)r;
+}

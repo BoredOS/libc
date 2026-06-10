@@ -29,6 +29,7 @@ int execl(const char *path, const char *arg, ...);
 int execlp(const char *file, const char *arg, ...);
 int execle(const char *path, const char *arg, ...);
 pid_t waitpid(pid_t pid, int *status, int options);
+pid_t getpid(void);
 
 void sleep(int ms);
 int usleep(unsigned int usec);
