@@ -469,6 +469,7 @@ __attribute__((weak)) int vsnprintf(char *str, size_t size, const char *fmt, va_
             int width = -1;
             int precision = -1;
             int lcount = 0;
+            int zcount = 0;
             char spec;
 
             while (*fmt == '-' || *fmt == '+' || *fmt == ' ' || *fmt == '#' || *fmt == '0') {
@@ -512,8 +513,9 @@ __attribute__((weak)) int vsnprintf(char *str, size_t size, const char *fmt, va_
                 }
             }
 
-            while (*fmt == 'l') {
-                lcount++;
+            while (*fmt == 'l' || *fmt == 'z') {
+                if (*fmt == 'l') lcount++;
+                else zcount++;
                 fmt++;
             }
 
@@ -536,7 +538,7 @@ __attribute__((weak)) int vsnprintf(char *str, size_t size, const char *fmt, va_
                     int total;
 
                     if (lcount >= 2) sv = va_arg(ap, long long);
-                    else if (lcount == 1) sv = va_arg(ap, long);
+                    else if (lcount == 1 || zcount > 0) sv = va_arg(ap, long);
                     else sv = va_arg(ap, int);
 
                     if (sv < 0) {
@@ -602,7 +604,7 @@ __attribute__((weak)) int vsnprintf(char *str, size_t size, const char *fmt, va_
                     int total;
 
                     if (lcount >= 2) uv = va_arg(ap, unsigned long long);
-                    else if (lcount == 1) uv = va_arg(ap, unsigned long);
+                    else if (lcount == 1 || zcount > 0) uv = va_arg(ap, unsigned long);
                     else uv = va_arg(ap, unsigned int);
 
                     if (!(precision == 0 && uv == 0ULL)) {

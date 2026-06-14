@@ -179,7 +179,29 @@ int sys_fs_mount_info(int index, mount_info_t *info) {
 
 int sys_poll(struct pollfd *fds, int nfds, int timeout) {
     int rc;
-    while ((rc = (int)syscall4(SYS_FS, FS_CMD_POLL, (uint64_t)fds, (uint64_t)nfds, (uint64_t)timeout)) == -2);
+    if (timeout > 0) {
+        uint32_t start_ticks = (uint32_t)sys_system(SYSTEM_CMD_GET_TICKS, 0, 0, 0, 0);
+        int remaining = timeout;
+        while (1) {
+            rc = (int)syscall4(SYS_FS, FS_CMD_POLL, (uint64_t)fds, (uint64_t)nfds, (uint64_t)remaining);
+            if (rc != -2) {
+                break;
+            }
+            uint32_t now = (uint32_t)sys_system(SYSTEM_CMD_GET_TICKS, 0, 0, 0, 0);
+            int elapsed = (int)(now - start_ticks) * 16;
+            if (elapsed >= timeout) {
+                rc = 0;
+                break;
+            }
+            remaining = timeout - elapsed;
+            if (remaining <= 0) {
+                rc = 0;
+                break;
+            }
+        }
+    } else {
+        while ((rc = (int)syscall4(SYS_FS, FS_CMD_POLL, (uint64_t)fds, (uint64_t)nfds, (uint64_t)timeout)) == -2);
+    }
     return rc;
 }
 
