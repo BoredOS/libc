@@ -199,6 +199,10 @@ int sys_poll(struct pollfd *fds, int nfds, int timeout) {
                 break;
             }
         }
+        if (rc == 0) {
+            // Perform one final non-blocking poll call to clean up wait queues in the kernel
+            syscall4(SYS_FS, FS_CMD_POLL, (uint64_t)fds, (uint64_t)nfds, 0);
+        }
     } else {
         while ((rc = (int)syscall4(SYS_FS, FS_CMD_POLL, (uint64_t)fds, (uint64_t)nfds, (uint64_t)timeout)) == -2);
     }
