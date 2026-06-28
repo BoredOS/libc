@@ -141,6 +141,7 @@ int sys_dup(int oldfd);
 int sys_dup2(int oldfd, int newfd);
 int sys_pipe(int pipefd[2]);
 int sys_fcntl(int fd, int cmd, int val);
+void *sys_sbrk(int incr);
 
 int sys_tty_create(void);
 int sys_tty_read_out(int tty_id, char *buf, int len);
