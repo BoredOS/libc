@@ -6,6 +6,9 @@
 #include "string.h"
 #include "stdio.h"
 #include "syscall.h"
+#include <fcntl.h>
+
+extern int sched_yield(void);
 
 static int copy_unix_path(const struct sockaddr *addr, socklen_t addrlen, char *path_out, size_t path_out_size) {
     const struct sockaddr_un *un = (const struct sockaddr_un *)addr;
@@ -35,12 +38,12 @@ static int copy_unix_path(const struct sockaddr *addr, socklen_t addrlen, char *
 }
 
 int socket(int domain, int type, int protocol) {
-    if (domain != AF_UNIX || type != SOCK_STREAM || protocol != 0) {
+    if ((domain != AF_UNIX && domain != AF_INET) || (type != SOCK_STREAM && type != SOCK_DGRAM) || protocol != 0) {
         errno = ENOTSUP;
         return -1;
     }
 
-    int fd = (int)syscall4(SYS_FS, FS_CMD_UNIX_SOCKET_CREATE, (uint64_t)domain, (uint64_t)type, (uint64_t)protocol);
+    int fd = (int)syscall3(SYS_SOCKET, (uint64_t)domain, (uint64_t)type, (uint64_t)protocol);
     if (fd < 0) {
         errno = -fd;
         return -1;
@@ -49,13 +52,14 @@ int socket(int domain, int type, int protocol) {
 }
 
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
-    char path[108];
-
-    if (copy_unix_path(addr, addrlen, path, sizeof(path)) < 0) {
-        return -1;
+    if (addr && addr->sa_family != AF_INET) {
+        char path[108];
+        if (copy_unix_path(addr, addrlen, path, sizeof(path)) < 0) {
+            return -1;
+        }
     }
 
-    int rc = (int)syscall4(SYS_FS, FS_CMD_UNIX_SOCKET_CONNECT, (uint64_t)sockfd, (uint64_t)addr, (uint64_t)addrlen);
+    int rc = (int)syscall3(SYS_CONNECT, (uint64_t)sockfd, (uint64_t)addr, (uint64_t)addrlen);
     if (rc < 0) {
         errno = -rc;
         return -1;
@@ -64,13 +68,14 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
 }
 
 int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
-    char path[108];
-
-    if (copy_unix_path(addr, addrlen, path, sizeof(path)) < 0) {
-        return -1;
+    if (addr && addr->sa_family != AF_INET) {
+        char path[108];
+        if (copy_unix_path(addr, addrlen, path, sizeof(path)) < 0) {
+            return -1;
+        }
     }
 
-    int rc = (int)syscall4(SYS_FS, FS_CMD_UNIX_SOCKET_BIND, (uint64_t)sockfd, (uint64_t)addr, (uint64_t)addrlen);
+    int rc = (int)syscall3(SYS_BIND, (uint64_t)sockfd, (uint64_t)addr, (uint64_t)addrlen);
     if (rc < 0) {
         errno = -rc;
         return -1;
@@ -79,7 +84,7 @@ int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
 }
 
 int listen(int sockfd, int backlog) {
-    int rc = (int)syscall3(SYS_FS, FS_CMD_UNIX_SOCKET_LISTEN, (uint64_t)sockfd, (uint64_t)backlog);
+    int rc = (int)syscall2(SYS_LISTEN, (uint64_t)sockfd, (uint64_t)backlog);
     if (rc < 0) {
         errno = -rc;
         return -1;
@@ -91,11 +96,11 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
     int rc;
 
     for (;;) {
-        rc = (int)syscall4(SYS_FS, FS_CMD_UNIX_SOCKET_ACCEPT, (uint64_t)sockfd, (uint64_t)addr, (uint64_t)addrlen);
+        rc = (int)syscall3(SYS_ACCEPT, (uint64_t)sockfd, (uint64_t)addr, (uint64_t)addrlen);
         if (rc != -2) {
             break;
         }
-        sys_yield();
+        sched_yield();
     }
 
     if (rc < 0) {
@@ -125,6 +130,32 @@ ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
     return rc;
 }
 
+ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen) {
+    int rc = (int)syscall6(SYS_SENDTO, (uint64_t)sockfd, (uint64_t)buf, (uint64_t)len, (uint64_t)flags, (uint64_t)dest_addr, (uint64_t)addrlen);
+    if (rc < 0) {
+        errno = -rc;
+        return -1;
+    }
+    return rc;
+}
+
+ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen) {
+    uint64_t temp_len = addrlen ? *addrlen : 0;
+    int rc = (int)syscall6(SYS_RECVFROM, (uint64_t)sockfd, (uint64_t)buf, (uint64_t)len, (uint64_t)flags, (uint64_t)src_addr, (uint64_t)&temp_len);
+    if (rc == -2) {
+        errno = EWOULDBLOCK;
+        return -1;
+    }
+    if (rc < 0) {
+        errno = -rc;
+        return -1;
+    }
+    if (addrlen) {
+        *addrlen = (socklen_t)temp_len;
+    }
+    return rc;
+}
+
 int shutdown(int sockfd, int how) {
     (void)sockfd;
     (void)how;
@@ -140,3 +171,5 @@ void perror(const char *s) {
         printf("%s\n", msg ? msg : "unknown error");
     }
 }
+
+

@@ -78,7 +78,7 @@ int sem_wait(sem_t *sem) {
     // got some sleep
     atomic_fetch_add_explicit(&sem->waiter, 1, memory_order_relaxed);
 
-    int result = sys_futex((uint32_t *)&sem->value, FUTEX_WAIT, 0);
+    int result = (int)syscall3(SYS_FUTEX, (uint64_t)&sem->value, (uint64_t)FUTEX_WAIT, (uint64_t)0);
     if (result != 0) {
       atomic_fetch_sub_explicit(&sem->waiter, 1, memory_order_relaxed);
 
@@ -134,7 +134,7 @@ int sem_post(sem_t *sem) {
       if (atomic_load_explicit(&sem->waiter, memory_order_relaxed) >
           0) // only wake when waiter > 0
 
-        sys_futex((uint32_t *)&sem->value, FUTEX_WAKE, 1);
+        syscall3(SYS_FUTEX, (uint64_t)&sem->value, (uint64_t)FUTEX_WAKE, (uint64_t)1);
 
       return 0;
     }

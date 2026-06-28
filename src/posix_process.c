@@ -233,16 +233,15 @@ __attribute__((weak)) pid_t waitpid(pid_t pid, int *status, int options) {
 }
 
 // usleep(usec) — sleep for usec microseconds.
-// Delegates to SYSTEM_CMD_SLEEP which takes milliseconds.
 int usleep(unsigned int usec) {
     unsigned int ms = usec / 1000;
     if (ms == 0 && usec > 0) ms = 1; // At least 1ms
-    sys_system(SYSTEM_CMD_SLEEP, ms, 0, 0, 0);
+    syscall1(SYS_NANOSLEEP, (uint64_t)ms);
     return 0;
 }
 
 __attribute__((weak)) pid_t getpid(void) {
-    int r = sys_system(SYSTEM_CMD_GET_PID, 0, 0, 0, 0);
+    int r = sys_getpid();
     if (r < 0) return -1;
     return (pid_t)r;
 }

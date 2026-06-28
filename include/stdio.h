@@ -6,6 +6,7 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef struct BOREDOS_FILE {
     int fd;
@@ -69,5 +70,7 @@ void perror(const char *s);
 
 // Buffering (no-op for BoredOS direct-write stdio)
 int setvbuf(FILE *stream, char *buf, int mode, size_t size);
+
+void set_text_color(uint32_t color);
 
 #endif

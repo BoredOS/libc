@@ -97,7 +97,7 @@ static void _b_fill_tm_from_epoch(time_t t, struct tm *out) {
 __attribute__((weak)) time_t time(time_t *out) {
     int dt[6] = {1970, 1, 1, 0, 0, 0};
     time_t t;
-    if (sys_system(SYSTEM_CMD_RTC_GET, 0, (uint64_t)dt, 0, 0) != 0) {
+    if (rtc_get(dt) != 0) {
         t = 0;
     } else {
         t = _b_seconds_from_ymdhms(dt[0], dt[1], dt[2], dt[3], dt[4], dt[5]);

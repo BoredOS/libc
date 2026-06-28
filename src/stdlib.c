@@ -381,7 +381,7 @@ char *realpath(const char *path, char *resolved_path) {
 }
 
 void sleep(int ms) {
-    sys_system(SYSTEM_CMD_SLEEP, ms, 0, 0, 0);
+    syscall1(SYS_NANOSLEEP, (uint64_t)ms);
 }
 
 static void (*g_atexit_handlers[32])(void);

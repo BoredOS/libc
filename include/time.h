@@ -35,4 +35,8 @@ struct tm *gmtime(const time_t *timer);
 size_t strftime(char *s, size_t max, const char *fmt, const struct tm *tm);
 time_t mktime(struct tm *tm);
 
+int get_ticks(void);
+int rtc_get(int *dt);
+int rtc_set(int *dt);
+
 #endif

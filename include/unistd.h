@@ -33,5 +33,6 @@ pid_t getpid(void);
 
 void sleep(int ms);
 int usleep(unsigned int usec);
+int sched_yield(void);
 
 #endif

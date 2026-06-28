@@ -103,7 +103,7 @@ __attribute__((weak)) void *mmap(void *addr, unsigned long length, int prot, int
         }
         kfd = h->kernel_fd;
     }
-    void *ret = sys_mmap(addr, length, prot, flags, kfd, offset);
+    void *ret = (void *)syscall6(SYS_MMAP, (uint64_t)addr, (uint64_t)length, (uint64_t)prot, (uint64_t)flags, (uint64_t)kfd, (uint64_t)offset);
     if (ret == MAP_FAILED) {
         errno = EINVAL;
     }
@@ -111,7 +111,7 @@ __attribute__((weak)) void *mmap(void *addr, unsigned long length, int prot, int
 }
 
 __attribute__((weak)) int munmap(void *addr, unsigned long length) {
-    int ret = sys_munmap(addr, length);
+    int ret = (int)syscall2(SYS_MUNMAP, (uint64_t)addr, (uint64_t)length);
     if (ret < 0) {
         errno = -ret;
         return -1;

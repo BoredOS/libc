@@ -18,6 +18,7 @@ extern int errno;
 #define EIO 5
 #define EEXIST 17
 #define EAGAIN 11
+#define EWOULDBLOCK EAGAIN
 #define EINTR 4
 #define ECHILD 10
 #define ENOTSUP 95
